@@ -1,0 +1,66 @@
+---
+title: "Identifying & visualizing the impacts of extreme weather in Houston, Texas"
+author: "Courtney Lorey"
+date: 2026-11-16
+format: typst
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Objective
+Climate change is increasing the frequency and intensity of extreme weather events, with devastating impacts. This analysis will identify and visualize the impacts of the February 2021 Texas power crisis — caused by a series three of extreme winter storms — by estimating the number of homes in the Houston metropolitan area that lost power and investigate whether not these impacts were disproportionately felt.
+
+This analysis is based on remotely-sensed night lights data, acquired from the Visible Infrared Imaging Radiometer Suite (VIIRS) onboard the Suomi satellite. In particular, we use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power. To determine the number of homes that lost power, we spatially join these areas with OpenStreetMap data on buildings and roads.
+
+Produce: 
+- a set of maps comparing night light intensities before and after the first two storms
+- a map of the homes in Houston that lost power
+- an estimate of the number of homes in Houston that lost power
+- a brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
+
+## Load packages
+```{r}
+#| output: false
+
+library(tidyverse)
+library(sf)
+library(tmap)
+library(terra)
+library(stars)
+library(knitr)
+```
+
+## Prepare data 
+
+```{r}
+#| output: false
+
+# Load roads data
+roads <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_roads_free_1.gpkg.zip")
+
+# Load house data
+houses <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_buildings_a_free_1.gpkg.zip")
+
+# Load night light VIIRS tile rasters
+feb7_tile5 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
+feb7_tile6 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
+feb16_tile5 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
+feb16_tile6 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+```
+
+## Merge data
+
+```{r}
+# Merge tile data for Feb 7 and Feb 16 - use mosaic if using stars (would need to load data in differently), use something else if using rast()/terra 
+?st_mosaic()
+```
+
+# Workflow 
+
+## Step 1: find locations that experienced a blackout by creating a mask
+
+## Step 2: exclude highways from analysis
+
+## Step 3: identify homes that experienced blackouts by combining the locations of homes and blackouts
