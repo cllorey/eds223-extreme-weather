@@ -19,6 +19,7 @@ Produce:
 - a map of the homes in Houston that lost power
 - an estimate of the number of homes in Houston that lost power
 - a brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
+- ADD CRS CHECKS/WARNINGS
 
 ## Load packages
 ```{r}
@@ -39,11 +40,17 @@ library(janitor)
 #| output: false
 
 # Load roads data
-roads <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_roads_free_1.gpkg.zip") |> 
+roads <- st_read(
+  dsn = "/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_roads_free_1.gpkg.zip", 
+  query = "SELECT * FROM gis_osm_roads_free_1 WHERE fclass='motorway'"
+) |> 
   clean_names()
 
 # Load house data
-houses <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_buildings_a_free_1.gpkg.zip") |> 
+houses <- st_read(
+  dsn = "/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_buildings_a_free_1.gpkg.zip",
+  query = "SELECT * FROM gis_osm_buildings_a_free_1 WHERE (type IS NULL AND name IS NULL) OR type in ('residential', 'apartments', 'house', 'static_caravan', 'detached')"
+) |> 
   clean_names()
 
 # Load night light VIIRS tile rasters
@@ -56,7 +63,7 @@ feb16_tile6 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-ext
 ## Merge data
 
 ```{r}
-# Merge tile data for Feb 7 and Feb 16 - use mosaic if using stars (would need to load data in differently), use something else if using rast()/terra 
+# Merge tile data for Feb 7 and Feb 16
 
 tx7 <- st_mosaic(feb7_tile5, feb7_tile6)
 tx16 <- st_mosaic(feb16_tile5, feb16_tile6)
@@ -75,41 +82,71 @@ st_crs(tx7) == st_crs(houses)
 
 ```{r}
 # Find the difference in night light between the two dates 
-light_diff <- tx16 - tx7
+light_diff <- tx7 - tx16
 
-# Reclassify the difference raster
-rcl <- cut(light_diff,
-          breaks = c(-Inf, 200, Inf),
-          labels = c("NA", "blackout")
-)
-
-plot(rcl, main = "Reclassified difference in light")
+# Subset
+blackouts <- light_diff
+blackouts[blackouts < 200] <- NA
 
 # Crop to the Houston area 
 box <- st_bbox(
   c(xmin = -96.5, ymin = 29, xmax = -94.5, ymax = 30.5),
   crs = st_crs(4326))
 
-houston_crop <- st_crop(rcl, box) 
+houston_crop <- st_crop(blackouts, box) 
 
-# Vectorize the blackout mask & fix invalid geometries 
+# Vectorize the blackout mask, fix invalid geometries, reproject crs
 blackout_vect <- st_as_sf(houston_crop, merge = TRUE) |>
-  st_make_valid()
-
-# Re-project the cropped blackout dataset to EPSG:3083
-reprojected_blackout <- st_transform(blackout_vect, crs = 3083)
-
+  st_make_valid() |> 
+  st_transform(crs = 3083)
 ```
 
 
 ## Step 2: exclude highways from analysis
 
 ```{r}
+# Check that crs 3083 units are meters
+st_crs(blackout_vect)$units
 
+# Reproject roads CRS to match reprojected blackout, create a 200m buffer around highways
+highway_buffer <- roads |> 
+  st_transform(crs = 3083) |> 
+  st_buffer(dist = 200) |> 
+  st_union()
+
+# Exclude locations within 200m of highways 
+blackout_no_hwy <- st_difference(blackout_vect, highway_buffer)
+
+plot(blackout_no_hwy)
 ```
 
 ## Step 3: identify homes that experienced blackouts by combining the locations of homes and blackouts
 
 ```{r}
+# Reproject houses crs to match
+houses <- st_transform(houses, crs = 3083)
 
+# Spatially join homes data with blackout data
+home_blackouts <- st_filter(x = blackout_no_hwy, y = houses, .predicate = st_intersects)
+nrow(home_blackouts) # The number of houses that experienced a blackout 
 ```
+
+# Visualizations
+Maps comparing night light intensities before and after the first two storms
+
+```{r}
+# Crop to the Houston area 
+tx7_crop <- st_crop(tx7, box) 
+tx16_crop <- st_crop(tx16, box) 
+
+# Plot
+light_before_after <- c(tx7_crop, tx16_crop)
+names(light_before_after) <- c("2-07-2021", "2-16-2021")
+plot(merge(light_before_after))
+```
+
+A map of the homes in Houston that lost power
+An estimate of the number of homes in Houston that lost power
+
+# Reflection
+A brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
