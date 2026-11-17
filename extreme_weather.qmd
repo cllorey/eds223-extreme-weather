@@ -30,6 +30,7 @@ library(tmap)
 library(terra)
 library(stars)
 library(knitr)
+library(janitor)
 ```
 
 ## Prepare data 
@@ -38,29 +39,77 @@ library(knitr)
 #| output: false
 
 # Load roads data
-roads <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_roads_free_1.gpkg.zip")
+roads <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_roads_free_1.gpkg.zip") |> 
+  clean_names()
 
 # Load house data
-houses <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_buildings_a_free_1.gpkg.zip")
+houses <- st_read("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/gis_osm_buildings_a_free_1.gpkg.zip") |> 
+  clean_names()
 
 # Load night light VIIRS tile rasters
-feb7_tile5 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
-feb7_tile6 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
-feb16_tile5 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
-feb16_tile6 <- rast("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
+feb7_tile5 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v05.001.2021039064328.tif")
+feb7_tile6 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021038.h08v06.001.2021039064329.tif")
+feb16_tile5 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v05.001.2021048091106.tif")
+feb16_tile6 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-extreme-weather/data/VNP46A1/VNP46A1.A2021047.h08v06.001.2021048091105.tif")
 ```
 
 ## Merge data
 
 ```{r}
 # Merge tile data for Feb 7 and Feb 16 - use mosaic if using stars (would need to load data in differently), use something else if using rast()/terra 
-?st_mosaic()
+
+tx7 <- st_mosaic(feb7_tile5, feb7_tile6)
+tx16 <- st_mosaic(feb16_tile5, feb16_tile6)
+```
+
+```{r}
+# Check if crs matches
+st_crs(roads) == st_crs(houses)
+st_crs(tx7) == st_crs(tx16)
+st_crs(tx7) == st_crs(houses)
 ```
 
 # Workflow 
 
 ## Step 1: find locations that experienced a blackout by creating a mask
 
+```{r}
+# Find the difference in night light between the two dates 
+light_diff <- tx16 - tx7
+
+# Reclassify the difference raster
+rcl <- cut(light_diff,
+          breaks = c(-Inf, 200, Inf),
+          labels = c("NA", "blackout")
+)
+
+plot(rcl, main = "Reclassified difference in light")
+
+# Crop to the Houston area 
+box <- st_bbox(
+  c(xmin = -96.5, ymin = 29, xmax = -94.5, ymax = 30.5),
+  crs = st_crs(4326))
+
+houston_crop <- st_crop(rcl, box) 
+
+# Vectorize the blackout mask & fix invalid geometries 
+blackout_vect <- st_as_sf(houston_crop, merge = TRUE) |>
+  st_make_valid()
+
+# Re-project the cropped blackout dataset to EPSG:3083
+reprojected_blackout <- st_transform(blackout_vect, crs = 3083)
+
+```
+
+
 ## Step 2: exclude highways from analysis
 
+```{r}
+
+```
+
 ## Step 3: identify homes that experienced blackouts by combining the locations of homes and blackouts
+
+```{r}
+
+```
