@@ -15,9 +15,9 @@ Climate change is increasing the frequency and intensity of extreme weather even
 This analysis is based on remotely-sensed night lights data, acquired from the Visible Infrared Imaging Radiometer Suite (VIIRS) onboard the Suomi satellite. In particular, we use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power. To determine the number of homes that lost power, we spatially join these areas with OpenStreetMap data on buildings and roads.
 
 Produce: 
-- a set of maps comparing night light intensities before and after the first two storms
-- a map of the homes in Houston that lost power
-- an estimate of the number of homes in Houston that lost power
+DONE a set of maps comparing night light intensities before and after the first two storms
+DONE a map of the homes in Houston that lost power
+DONE an estimate of the number of homes in Houston that lost power
 - a brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
 - ADD CRS CHECKS/WARNINGS
 
@@ -64,7 +64,6 @@ feb16_tile6 <- read_stars("/Users/courtneylorey/Desktop/GitHub/eds223/eds223-ext
 
 ```{r}
 # Merge tile data for Feb 7 and Feb 16
-
 tx7 <- st_mosaic(feb7_tile5, feb7_tile6)
 tx16 <- st_mosaic(feb16_tile5, feb16_tile6)
 ```
@@ -84,7 +83,7 @@ st_crs(tx7) == st_crs(houses)
 # Find the difference in night light between the two dates 
 light_diff <- tx7 - tx16
 
-# Subset
+# Subset to areas that likely experienced blackouts
 blackouts <- light_diff
 blackouts[blackouts < 200] <- NA
 
@@ -92,7 +91,6 @@ blackouts[blackouts < 200] <- NA
 box <- st_bbox(
   c(xmin = -96.5, ymin = 29, xmax = -94.5, ymax = 30.5),
   crs = st_crs(4326))
-
 houston_crop <- st_crop(blackouts, box) 
 
 # Vectorize the blackout mask, fix invalid geometries, reproject crs
@@ -116,8 +114,6 @@ highway_buffer <- roads |>
 
 # Exclude locations within 200m of highways 
 blackout_no_hwy <- st_difference(blackout_vect, highway_buffer)
-
-plot(blackout_no_hwy)
 ```
 
 ## Step 3: identify homes that experienced blackouts by combining the locations of homes and blackouts
@@ -128,25 +124,56 @@ houses <- st_transform(houses, crs = 3083)
 
 # Spatially join homes data with blackout data
 home_blackouts <- st_filter(x = blackout_no_hwy, y = houses, .predicate = st_intersects)
-nrow(home_blackouts) # The number of houses that experienced a blackout 
 ```
 
 # Visualizations
-Maps comparing night light intensities before and after the first two storms
+
+## Comparing night light intensities before and after the first two storms
 
 ```{r}
 # Crop to the Houston area 
 tx7_crop <- st_crop(tx7, box) 
 tx16_crop <- st_crop(tx16, box) 
 
-# Plot
+# Plot of light intensity before and after storms 
 light_before_after <- c(tx7_crop, tx16_crop)
 names(light_before_after) <- c("2-07-2021", "2-16-2021")
-plot(merge(light_before_after))
+lights <- merge(light_before_after)
+
+tm_shape(lights) + 
+  tm_raster(
+    col.scale = tm_scale_continuous_log1p(values = "viridis"),
+    col.legend = tm_legend(
+      title = "Night light radiance (nW/cm²/sr)",
+      orientation = "landscape"
+    )
+  ) +
+  tm_title("Houston night light intensity before and after February 2021 storms") +
+  tm_compass(position = c("left", "bottom"), size = 0.8) +
+  tm_scalebar(position = tm_pos_out("center", "bottom")) +
+  tm_layout(legend.outside = TRUE, legend.outside.position = "bottom")
 ```
 
-A map of the homes in Houston that lost power
-An estimate of the number of homes in Houston that lost power
+## Mapping homes in Houston that lost power
+
+```{r}
+tm_shape(home_blackouts) +
+  tm_basemap("OpenStreetMap") +
+  tm_polygons(fill = "black", col = NULL) +
+  tm_title("Houston blackouts between Feb 7-16, 2021 (n = 3,544)") +
+  tm_compass(position = c("left", "bottom"), size = 0.8) +
+  tm_scalebar(position = tm_pos_out("center", "bottom"))
+```
+
+## Estimating the number of homes that experienced blackouts 
+
+```{r}
+print(nrow(home_blackouts))
+```
+
+Based on remotely-sensed night lights data along with highway and home locations in Houston, TX, the number of homes in Houston that appear to have lost power during the winter storms between February 7 and February 16, 2021 is estimated to be **3,544**.  
+
 
 # Reflection
 A brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
+
