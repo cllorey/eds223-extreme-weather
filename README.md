@@ -15,7 +15,6 @@ eds223-extreme-weather
 └── extreme_weather.qmd
 |   .gitignore
     └───data
-        └─── ACS_2019_5YR_TRACT_48_TEXAS.gdb.zip
         └─── gis_osm_buildings_a_free_1.gpkg.zip
         └─── gis_osm_roads_free_1.gpkg.zip
         └─── VNP46A1
@@ -25,38 +24,36 @@ eds223-extreme-weather
             └── VNP46A1.A2021047.h08v06.001.2021048091105.tif
 ```
 
-## Data Access NEED TO UPDATE HERE AND BELOW -------- 
-The specific files used in this exercise can be downloaded using [this link](https://drive.google.com/file/d/1u-iwnPDbe6ZK7wSFVMI-PpCKaRQ3RVmg/view?usp=sharing). The data used in this project originated from the following sources:
+## Data Access  
+The specific files used in this exercise can be downloaded using [this link](https://drive.google.com/file/d/1bTk62xwOzBqWmmT791SbYbHxnCdjmBtw/view?usp=drive_link). The data used in this project originated from the following sources:
 
-1. Average annual sea surface temperature (SST) from the years 2008 to 2012 from [NOAA’s 5km Daily Global Satellite Sea Surface Temperature Anomaly v3.1](https://coralreefwatch.noaa.gov/product/5km/index_5km_ssta.php).
-
-Data files:
-* `average_annual_sst_2008.tif`
-* `average_annual_sst_2009.tif`
-* `average_annual_sst_2010.tif`
-* `average_annual_sst_2011.tif`
-* `average_annual_sst_2012.tif`
-
-2. Ocean bathymetry data from the [General Bathymetric Chart of the Oceans (GEBCO)](https://www.gebco.net/data_and_products/gridded_bathymetry_data/#area).
+1. Visible Infrared Imaging Radiometer Suite ([VIIRS](https://en.wikipedia.org/wiki/Visible_Infrared_Imaging_Radiometer_Suite)) data from the Suomi satellite, distributed through NASA’s Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center ([LAADS DAAC](https://ladsweb.modaps.eosdis.nasa.gov/)).
 
 Data files:
-* `depth.tif`
+* `VNP46A1.A2021038.h08v05.001.2021039064328.tif`: tile h08v05, collected on 2021-02-07
+* `VNP46A1.A2021038.h08v06.001.2021039064329.tif`: tile h08v06, collected on 2021-02-07
+* `VNP46A1.A2021047.h08v05.001.2021048091106.tif`: tile h08v05, collected on 2021-02-16
+* `VNP46A1.A2021047.h08v06.001.2021048091105.tif`: tile h08v06, collected on 2021-02-16
 
-3. Maritime boundaries using Exclusive Economic Zones off the west coast of US from [Marineregions.org](https://www.marineregions.org/eez.php).
+2. Texas road data from [OpenStreetMap](https://planet.openstreetmap.org/). The EDS 223 teaching team used [Geofabrick](https://download.geofabrik.de/) to retrieve a shapefile of all highways in Texas and prepared a Geopackage containing just the subset of roads that intersect the Houston metropolitan area. 
 
 Data files:
-* `wc_regions_clean.shp`
+* `gis_osm_roads_free_1.gpkg`
 
-4. Information on species depth and temperature requirements from [SeaLifeBase](https://www.sealifebase.ca/summary/Mytilus-galloprovincialis.html).
+3. Texas building data from [OpenStreetMap](https://planet.openstreetmap.org/), downloaded from [Geofabrick](https://download.geofabrik.de/). The EDS 223 teaching team prepared a GeoPackage containing only houses in the Houston metropolitan area.
+
+Data files:
+* `gis_osm_buildings_a_free_1.gpkg`
 
 ## Authors
 [Courtney Lorey](https://github.com/cllorey/cll214final), Bren School of Environmental Science & Management, University of California, Santa Barbara
 
 ## References
-NOAA Coral Reef Watch Version 3.1 Daily Global 5km Satellite Sea Surface Temperature Anomaly Product, 2008–2012. 2026. *NOAA Coral Reef Watch*. Retrieved: November 05, 2026, from [https://coralreefwatch.noaa.gov/product/5km/index_5km_ssta.php](https://coralreefwatch.noaa.gov/product/5km/index_5km_ssta.php).
 
-GEBCO_2026 Grid. 2026. *GEBCO Bathymetric Compilation Group*. Retrieved: November 05, 2026, from [https://www.gebco.net/data-products/gridded-bathymetry-data#area](https://www.gebco.net/data-products/gridded-bathymetry-data#area).
+Data prepared by the EDS 223 teaching team. 
 
-Maritime Boundaries Geodatabase: Maritime Boundaries and Exclusive Economic Zones (200NM), version 12. 2023. *Flanders Marine Institute*. Retrieved: November 05, 2026, from [https://www.marineregions.org/eez.php](https://www.marineregions.org/eez.php).
+NASA Black Marble VIIRS/NPP Daily Gridded Day Night Band 15 arc-second Linear Lat Lon Grid Night (VNP46A1), Version 1, tiles h08v05 and h08v06, February 7 and February 16, 2021. 2021. *NASA Level-1 and Atmospheric Archive & Distribution System Distributed Active Archive Center (LAADS DAAC)*. Retrieved: November 2026, from [https://ladsweb.modaps.eosdis.nasa.gov/](https://ladsweb.modaps.eosdis.nasa.gov/).
 
-Mediterranean mussel (*Mytilus galloprovincialis*). 2026. *SeaLifeBase*. Retrieved: November 05, 2026, from [https://www.sealifebase.ca/summary/Mytilus-galloprovincialis.html](https://www.sealifebase.ca/summary/Mytilus-galloprovincialis.html).
+OpenStreetMap Texas Roads (gis_osm_roads_free_1), subset to the Houston metropolitan area. 2021. *Geofabrik GmbH; © OpenStreetMap contributors*. Retrieved: November 2026, from [https://download.geofabrik.de/north-america/us/texas.html](https://download.geofabrik.de/north-america/us/texas.html).
+
+OpenStreetMap Texas Buildings (gis_osm_buildings_a_free_1), subset to houses in the Houston metropolitan area. 2021. *Geofabrik GmbH; © OpenStreetMap contributors*. Retrieved: November 2026, from [https://download.geofabrik.de/north-america/us/texas.html](https://download.geofabrik.de/north-america/us/texas.html).
