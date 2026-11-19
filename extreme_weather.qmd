@@ -143,7 +143,10 @@ blackout_no_hwy <- st_difference(blackout_vect, highway_buffer)
 houses <- st_transform(houses, crs = 3083)
 
 # Spatially join homes data with blackout data
-home_blackouts <- st_filter(x = blackout_no_hwy, y = houses, .predicate = st_intersects)
+home_blackouts <- st_intersection(blackout_no_hwy, houses)
+
+# Convert to points to plot
+blackout_points <- st_point_on_surface(home_blackouts)
 ```
 
 # Visualizations
@@ -177,22 +180,23 @@ tm_shape(lights) +
 ## Estimating the number of homes that experienced blackouts 
 
 ```{r}
-print(nrow(home_blackouts))
+print(length(unique(home_blackouts$osm_id)))
 ```
 
 ## Mapping homes in Houston that lost power
 
 ```{r}
-tm_shape(home_blackouts) +
+tm_shape(blackout_points) +
   tm_basemap("OpenStreetMap") +
-  tm_polygons(fill = "black", col = NULL) +
-  tm_title("Houston residential blackouts between Feb 7-16, 2021 (n = 3,544)") +
+  tm_dots(fill = "black",
+          size = 0.005) +
+  tm_title("Houston residential blackouts between Feb 7-16, 2021 (n = 157,967)") +
   tm_compass(position = c("left", "bottom"), size = 0.8) +
   tm_scalebar(position = tm_pos_out("center", "bottom"))
 ```
 
 # Reflection
-By comparing remotely-sensed night light radiance on two different dates, we can see what areas appear to have lost power across the intervening days. Map 1 shows a noticeable decrease in night light radiance in Houston, TX between February 7 and February 16, implying that blackouts occurred in that time period due to the widespread winter storms. To estimate and visualize where the blackouts occurred, we used building and road data from OpenStreetMap to identify the number of residential buildings that appear to have experienced a blackout given the observed difference in radiance from the VIIRS data (assuming that any location that experienced a drop of more than 200 nW cm-2sr-1 experienced a blackout). Map 2 visualized the location and number of the residential buildings that experienced a blackout. From this, we estimate that approximately **3,544** residential buildings in Houston lost power during the winter storms between February 7 and February 16, 2021. 
+By comparing remotely-sensed night light radiance on two different dates, we can see what areas appear to have lost power across the intervening days. Map 1 shows a noticeable decrease in night light radiance in Houston, TX between February 7 and February 16, implying that blackouts occurred in that time period due to the widespread winter storms. To estimate and visualize where the blackouts occurred, we used building and road data from OpenStreetMap to identify the number of residential buildings that appear to have experienced a blackout given the observed difference in radiance from the VIIRS data (assuming that any location that experienced a drop of more than 200 nW cm-2sr-1 experienced a blackout). Map 2 visualized the location and number of the residential buildings that experienced a blackout. From this, we estimate that approximately **157,967** residential buildings in Houston lost power during the winter storms between February 7 and February 16, 2021. 
 
 This estimate has some limitations. Firstly, because highways may have experienced changes in their night light intensities unrelated to storms, we chose to exclude locations within 200 meters of highways in the Houston area. Depending on proximity of a residential building to a highway, there is a chance we could have excluded some data, resulting in an underestimation of the true number of blackouts. Secondly, we may be underestimating the true number of blackouts that occurred as a result of the winter storms. The storms continued through February 20, and we only looked at blackouts through the 16th. We chose to look at February 7 and February 16 given their minimal cloud cover: they were clear enough to visualize the extent of the power outage. Future research could overlay these layers with demographic data to determine if the impacts of these storms were disproportionately felt by vulnerable populations. 
 
