@@ -10,16 +10,9 @@ execute:
 ---
 
 # Objective
-Climate change is increasing the frequency and intensity of extreme weather events, with devastating impacts. This analysis will identify and visualize the impacts of the February 2021 Texas power crisis — caused by a series three of extreme winter storms — by estimating the number of homes in the Houston metropolitan area that lost power and investigate whether not these impacts were disproportionately felt.
+Climate change increases the frequency and intensity of extreme weather events, from wildfires to winter storms. This analysis will identify and visualize the impacts of the February 2021 Texas power crisis — caused by a series three of extreme winter storms (Feb 10–11, 13–17, and 15–20) — by estimating the number of homes in the Houston metropolitan area that lost power. 
 
-This analysis is based on remotely-sensed night lights data, acquired from the Visible Infrared Imaging Radiometer Suite (VIIRS) onboard the Suomi satellite. In particular, we use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power. To determine the number of homes that lost power, we spatially join these areas with OpenStreetMap data on buildings and roads.
-
-Produce: 
-DONE a set of maps comparing night light intensities before and after the first two storms
-DONE a map of the homes in Houston that lost power
-DONE an estimate of the number of homes in Houston that lost power
-- a brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
-- ADD CRS CHECKS/WARNINGS
+This analysis is based on remotely-sensed night lights data, acquired from the Visible Infrared Imaging Radiometer Suite (VIIRS) of the Suomi satellite. We use the VNP46A1 to detect differences in night lights before and after the storm to identify areas that lost electric power. To determine the number of homes that lost power, we spatially join these areas with OpenStreetMap data on buildings and roads.
 
 ## Load packages
 ```{r}
@@ -30,7 +23,6 @@ library(sf)
 library(tmap)
 library(terra)
 library(stars)
-library(knitr)
 library(janitor)
 ```
 
@@ -69,15 +61,43 @@ tx16 <- st_mosaic(feb16_tile5, feb16_tile6)
 ```
 
 ```{r}
-# Check if crs matches
-st_crs(roads) == st_crs(houses)
-st_crs(tx7) == st_crs(tx16)
-st_crs(tx7) == st_crs(houses)
+# Check that datasets have the same crs
+if(st_crs(roads) == st_crs(houses)) { 
+  print("Coordinate reference systems match")
+} else {
+  warning("Updating coordinate reference systems to match")
+  roads <- st_transform(roads, crs(houses))
+  if (crs(roads) == crs(houses)) {
+    print("Coordinate reference systems have been updated to match")
+  }
+}
+
+# Check that datasets have the same crs
+if(st_crs(tx7) == st_crs(tx16)) { 
+  print("Coordinate reference systems match")
+} else {
+  warning("Updating coordinate reference systems to match")
+  tx7 <- st_transform(tx7, crs(tx16))
+  if (crs(tx7) == crs(tx16)) {
+    print("Coordinate reference systems have been updated to match")
+  }
+}
+
+# Check that datasets have the same crs
+if(st_crs(tx7) == st_crs(houses)) { 
+  print("Coordinate reference systems match")
+} else {
+  warning("Updating coordinate reference systems to match")
+  tx7 <- st_transform(tx7, crs(houses))
+  if (crs(tx7) == crs(houses)) {
+    print("Coordinate reference systems have been updated to match")
+  }
+}
 ```
 
 # Workflow 
 
-## Step 1: find locations that experienced a blackout by creating a mask
+## Step 1: find locations that experienced a blackout
 
 ```{r}
 # Find the difference in night light between the two dates 
@@ -154,26 +174,26 @@ tm_shape(lights) +
   tm_layout(legend.outside = TRUE, legend.outside.position = "bottom")
 ```
 
-## Mapping homes in Houston that lost power
-
-```{r}
-tm_shape(home_blackouts) +
-  tm_basemap("OpenStreetMap") +
-  tm_polygons(fill = "black", col = NULL) +
-  tm_title("Houston blackouts between Feb 7-16, 2021 (n = 3,544)") +
-  tm_compass(position = c("left", "bottom"), size = 0.8) +
-  tm_scalebar(position = tm_pos_out("center", "bottom"))
-```
-
 ## Estimating the number of homes that experienced blackouts 
 
 ```{r}
 print(nrow(home_blackouts))
 ```
 
-Based on remotely-sensed night lights data along with highway and home locations in Houston, TX, the number of homes in Houston that appear to have lost power during the winter storms between February 7 and February 16, 2021 is estimated to be **3,544**.  
+## Mapping homes in Houston that lost power
 
+```{r}
+tm_shape(home_blackouts) +
+  tm_basemap("OpenStreetMap") +
+  tm_polygons(fill = "black", col = NULL) +
+  tm_title("Houston residential blackouts between Feb 7-16, 2021 (n = 3,544)") +
+  tm_compass(position = c("left", "bottom"), size = 0.8) +
+  tm_scalebar(position = tm_pos_out("center", "bottom"))
+```
 
 # Reflection
-A brief reflection (approx. 100 words) summarizing your results and discussing any limitations to this study
+By comparing remotely-sensed night light radiance on two different dates, we can see what areas appear to have lost power across the intervening days. Map 1 shows a noticeable decrease in night light radiance in Houston, TX between February 7 and February 16, implying that blackouts occurred in that time period due to the widespread winter storms. To estimate and visualize where the blackouts occurred, we used building and road data from OpenStreetMap to identify the number of residential buildings that appear to have experienced a blackout given the observed difference in radiance from the VIIRS data (assuming that any location that experienced a drop of more than 200 nW cm-2sr-1 experienced a blackout). Map 2 visualized the location and number of the residential buildings that experienced a blackout. From this, we estimate that approximately **3,544** residential buildings in Houston lost power during the winter storms between February 7 and February 16, 2021. 
+
+This estimate has some limitations. Firstly, because highways may have experienced changes in their night light intensities unrelated to storms, we chose to exclude locations within 200 meters of highways in the Houston area. Depending on proximity of a residential building to a highway, there is a chance we could have excluded some data, resulting in an underestimation of the true number of blackouts. Secondly, we may be underestimating the true number of blackouts that occurred as a result of the winter storms. The storms continued through February 20, and we only looked at blackouts through the 16th. We chose to look at February 7 and February 16 given their minimal cloud cover: they were clear enough to visualize the extent of the power outage. Future research could overlay these layers with demographic data to determine if the impacts of these storms were disproportionately felt by vulnerable populations. 
+
 
